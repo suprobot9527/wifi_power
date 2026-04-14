@@ -1,0 +1,18 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.openOcdConfigs": [
+    "board/esp32c3-builtin.cfg"
+  ],
+  "idf.currentSetup": "E:/ESP/Espressif/frameworks/esp-idf-v5.3.3/",
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32c3"
+  },
+  "clangd.path": "E:\\ESP\\Espressif\\tools\\esp-clang\\16.0.1-fe4f10a809\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=f:\\workspeck\\z8_WIFIproject\\wifi_Power_supply\\build"
+  ],
+  "idf.flashType": "UART",
+  "idf.portWin": "COM12"
+}
