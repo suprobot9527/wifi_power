@@ -49,6 +49,16 @@ void dri_oled_show_num(uint8_t x, uint8_t y, uint32_t num, uint8_t len, uint8_t 
 void dri_oled_clear(void);
 
 /**
+ * @brief 清空显示缓冲区（不刷新屏幕）
+ */
+void dri_oled_clear_buf(void);
+
+/**
+ * @brief 写字符串到缓冲区（不刷新屏幕）
+ */
+void dri_oled_show_string_buf(uint8_t x, uint8_t y, const char *str, uint8_t size);
+
+/**
  * @brief 刷新显示 (将GRAM写入屏幕)
  * @return ESP_OK 成功
  */

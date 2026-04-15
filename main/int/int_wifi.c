@@ -38,12 +38,21 @@ static bool s_wifi_connected = false;
 #define PROV_MGR_MAX_RETRY  5
 static int s_prov_retry_count = 0;
 
+/* WiFi断连重试计数 */
+#define WIFI_RECONNECT_MAX  10
+static int s_reconnect_count = 0;
+static bool s_wifi_gave_up = false;  /* WiFi重连放弃标志 */
+
 /* 二维码相关 */
 #define PROV_QR_VERSION     "v1"
 #define PROV_TRANSPORT_BLE  "ble"
 #define QRCODE_BASE_URL     "https://espressif.github.io/esp-jumpstart/qrcode.html"
 
 /* ============== 内部函数 ============== */
+
+/* 前向声明 */
+static esp_err_t wifi_start_provisioning(void);
+static void wifi_start_sta(void);
 
 /**
  * @brief 生成BLE设备名称（基于MAC地址后3字节）
@@ -107,11 +116,18 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
             esp_wifi_connect();
             break;
         case WIFI_EVENT_STA_DISCONNECTED:
-            ESP_LOGI(TAG, "WiFi断开，尝试重连...");
             s_wifi_connected = false;
             xEventGroupSetBits(s_wifi_event_group, WIFI_DISCONNECTED_BIT);
             xEventGroupClearBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
-            esp_wifi_connect();
+            s_reconnect_count++;
+            ESP_LOGW(TAG, "WiFi断开，尝试重连(%d/%d)...", s_reconnect_count, WIFI_RECONNECT_MAX);
+            if (s_reconnect_count >= WIFI_RECONNECT_MAX) {
+                ESP_LOGW(TAG, "重连%d次失败，放弃WiFi连接", WIFI_RECONNECT_MAX);
+                s_wifi_gave_up = true;
+                esp_wifi_stop();
+            } else {
+                esp_wifi_connect();
+            }
             break;
         default:
             break;
@@ -122,6 +138,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
         ESP_LOGI(TAG, "获取IP地址:" IPSTR, IP2STR(&event->ip_info.ip));
         s_wifi_connected = true;
+        s_reconnect_count = 0;  /* 连接成功，重置重连计数 */
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
         xEventGroupClearBits(s_wifi_event_group, WIFI_DISCONNECTED_BIT);
     }
@@ -219,6 +236,9 @@ static esp_err_t wifi_start_provisioning(void)
     };
     ESP_ERROR_CHECK(wifi_prov_mgr_init(config));
 
+    /* 让出CPU，避免看门狗超时 */
+    vTaskDelay(pdMS_TO_TICKS(100));
+
     /* 检查是否已配网 */
     bool provisioned = false;
     ESP_ERROR_CHECK(wifi_prov_mgr_is_provisioned(&provisioned));
@@ -249,8 +269,14 @@ static esp_err_t wifi_start_provisioning(void)
 
         ESP_LOGI(TAG, "BLE设备名: %s", service_name);
 
+        /* 让出CPU避免看门狗超时 */
+        vTaskDelay(pdMS_TO_TICKS(100));
+
         /* 打印二维码到串口终端 */
         wifi_prov_print_qr(service_name, PROV_TRANSPORT_BLE);
+
+        /* 二维码打印完成后让出CPU */
+        vTaskDelay(pdMS_TO_TICKS(100));
     } else {
         ESP_LOGI(TAG, "设备已配网，直接连接WiFi");
         /* 已配网则释放配网管理器，直接启动STA */
@@ -295,6 +321,9 @@ esp_err_t int_wifi_init(void)
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
+    /* ESP32-C3单核，WiFi+BLE初始化耗时较长，主动让出CPU避免触发看门狗 */
+    vTaskDelay(pdMS_TO_TICKS(100));
+
     /* 如果标记了重置，在WiFi初始化完成后执行 */
     if (s_need_reset_prov) {
         wifi_prov_mgr_config_t rst_config = {
@@ -334,4 +363,26 @@ esp_err_t int_wifi_reset_provisioning(void)
     s_need_reset_prov = true;
     ESP_LOGI(TAG, "已标记重置配网，将在初始化时生效");
     return ESP_OK;
+}
+
+esp_err_t int_wifi_reconnect_reset(void)
+{
+    ESP_LOGI(TAG, "重置WiFi重连状态，重新尝试连接...");
+    s_reconnect_count = 0;
+    s_wifi_gave_up = false;
+    s_wifi_connected = false;
+    xEventGroupClearBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+
+    /* 先停止再启动WiFi，触发STA_START事件自动连接 */
+    esp_wifi_stop();
+    esp_err_t ret = esp_wifi_start();
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "WiFi重启失败: %s", esp_err_to_name(ret));
+    }
+    return ret;
+}
+
+bool int_wifi_gave_up(void)
+{
+    return s_wifi_gave_up;
 }

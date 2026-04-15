@@ -18,8 +18,8 @@ static void oled_display_task(void *arg)
         // 获取最新电能采样数据
         power_sample_t sample = power_meter_get_latest();
 
-        // 清空显示缓冲
-        dri_oled_clear();
+        // 清空缓冲区（不刷新屏幕）
+        dri_oled_clear_buf();
 
         if (!sample.valid) {
             // 未收到数据时使用默认测试值
@@ -31,19 +31,22 @@ static void oled_display_task(void *arg)
 
         // 第1行: 电压 (y=0)
         snprintf(line_buf, sizeof(line_buf), "U: %.1f V", sample.voltage_v);
-        dri_oled_show_string(0, 0, line_buf, 16);
+        dri_oled_show_string_buf(0, 0, line_buf, 16);
 
         // 第2行: 电流 (y=16)
         snprintf(line_buf, sizeof(line_buf), "I: %.3f A", sample.current_a);
-        dri_oled_show_string(0, 16, line_buf, 16);
+        dri_oled_show_string_buf(0, 16, line_buf, 16);
 
         // 第3行: 功率 (y=32)
         snprintf(line_buf, sizeof(line_buf), "P: %.1f W", sample.active_power_w);
-        dri_oled_show_string(0, 32, line_buf, 16);
+        dri_oled_show_string_buf(0, 32, line_buf, 16);
 
         // 第4行: 累计电能 (y=48)
         snprintf(line_buf, sizeof(line_buf), "E: %.2f Wh", sample.energy_wh_total);
-        dri_oled_show_string(0, 48, line_buf, 16);
+        dri_oled_show_string_buf(0, 48, line_buf, 16);
+
+        // 统一刷新到屏幕（一次I2C传输，无闪烁）
+        dri_oled_refresh();
 
         vTaskDelay(pdMS_TO_TICKS(OLED_REFRESH_PERIOD_MS));
     }

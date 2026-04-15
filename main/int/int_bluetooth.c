@@ -319,19 +319,21 @@ static void gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg)
 
 static void ble_notify_task(void *param)
 {
-    static uint32_t test_cnt = 0;
     while (1) {
         vTaskDelay(pdMS_TO_TICKS(2000));
         if (!s_ble_connected || s_power_data_attr_handle == 0) {
             continue;
         }
 
-        /* 构造测试消息: 4字节计数值 */
-        test_cnt++;
-        char test_msg[32];
-        int len = snprintf(test_msg, sizeof(test_msg), "BLE_TEST:%lu", (unsigned long)test_cnt);
+        /* 获取真实电能数据并格式化为可读字符串 */
+        power_sample_t sample = power_meter_get_latest();
+        char msg[128];
+        int len = snprintf(msg, sizeof(msg),
+                           "{\"V\":%.1f,\"A\":%.3f,\"W\":%.1f,\"Wh\":%.2f}",
+                           sample.voltage_v, sample.current_a,
+                           sample.active_power_w, sample.energy_wh_total);
 
-        struct os_mbuf *om = ble_hs_mbuf_from_flat(test_msg, len);
+        struct os_mbuf *om = ble_hs_mbuf_from_flat(msg, len);
         if (om == NULL) {
             ESP_LOGE(TAG, "Notify mbuf分配失败");
             continue;
@@ -339,7 +341,7 @@ static void ble_notify_task(void *param)
 
         int rc = ble_gatts_notify_custom(s_conn_handle, s_power_data_attr_handle, om);
         if (rc == 0) {
-            ESP_LOGI(TAG, "[Notify] %s", test_msg);
+            ESP_LOGD(TAG, "[Notify] %s", msg);
         } else {
             ESP_LOGW(TAG, "Notify发送失败, rc=%d", rc);
         }
@@ -351,6 +353,14 @@ static void ble_notify_task(void *param)
 esp_err_t int_bluetooth_init(void)
 {
     int rc;
+
+    /* 尝试停止可能由 BLE 配网残留的 NimBLE 资源
+     * nimble_port_stop() 会通知 host task 退出并等待完成
+     * 如果 NimBLE 未运行则跳过 */
+    // if (nimble_port_stop() == 0) {
+    //     nimble_port_deinit();
+    //     ESP_LOGI(TAG, "已释放配网残留的NimBLE资源");
+    // }
 
     /* 初始化 NimBLE 协议栈 */
     rc = nimble_port_init();

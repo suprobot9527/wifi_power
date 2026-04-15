@@ -35,4 +35,17 @@ esp_err_t int_wifi_wait_connected(uint32_t timeout_ms);
  */
 esp_err_t int_wifi_reset_provisioning(void);
 
+/**
+ * @brief 重置WiFi重连状态并重新尝试连接
+ *        清除重连计数和放弃标志，重启WiFi STA
+ * @return ESP_OK 成功
+ */
+esp_err_t int_wifi_reconnect_reset(void);
+
+/**
+ * @brief 查询WiFi是否已放弃重连（断连超过10次）
+ * @return true 已放弃WiFi
+ */
+bool int_wifi_gave_up(void);
+
 #endif /* __INT_WIFI_H__ */

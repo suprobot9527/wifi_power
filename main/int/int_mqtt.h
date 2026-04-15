@@ -66,4 +66,9 @@ void int_mqtt_set_data_callback(int_mqtt_data_cb_t cb);
  */
 esp_mqtt_client_handle_t int_mqtt_get_client(void);
 
+/**
+ * @brief 停止并销毁MQTT客户端
+ */
+void int_mqtt_stop(void);
+
 #endif /* __INT_MQTT_H__ */

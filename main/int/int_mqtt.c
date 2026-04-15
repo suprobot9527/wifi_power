@@ -21,7 +21,7 @@ static const char *TAG = "int_mqtt";
 static esp_mqtt_client_handle_t s_mqtt_client = NULL;
 
 /* 默认Broker地址 */
-#define MQTT_BROKER_URI_DEFAULT "mqtt://192.168.54.34:1883"
+#define MQTT_BROKER_URI_DEFAULT "mqtt://192.168.54.26:1883"
 
 /* 连接状态 */
 static bool s_mqtt_connected = false;
@@ -173,4 +173,15 @@ void int_mqtt_set_data_callback(int_mqtt_data_cb_t cb)
 esp_mqtt_client_handle_t int_mqtt_get_client(void)
 {
     return s_mqtt_client;
+}
+
+void int_mqtt_stop(void)
+{
+    if (s_mqtt_client != NULL) {
+        esp_mqtt_client_stop(s_mqtt_client);
+        esp_mqtt_client_destroy(s_mqtt_client);
+        s_mqtt_client = NULL;
+        s_mqtt_connected = false;
+        ESP_LOGI(TAG, "MQTT客户端已停止并销毁");
+    }
 }

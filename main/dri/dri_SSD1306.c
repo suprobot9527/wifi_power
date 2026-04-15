@@ -187,6 +187,26 @@ void dri_oled_clear(void)
     dri_oled_refresh();
 }
 
+void dri_oled_clear_buf(void)
+{
+    memset(s_display_buf, 0x00, sizeof(s_display_buf));
+}
+
+void dri_oled_show_string_buf(uint8_t x, uint8_t y, const char *str, uint8_t size)
+{
+    if (str == NULL) return;
+    while (*str != '\0') {
+        if (x > (SSD1306_WIDTH - size / 2)) {
+            x = 0;
+            y += size;
+            if (y > (SSD1306_HEIGHT - size)) return;
+        }
+        oled_draw_char(x, y, *str, size, 1);
+        x += size / 2;
+        str++;
+    }
+}
+
 esp_err_t dri_oled_refresh(void)
 {
     if (s_i2c_dev == NULL) {
