@@ -4,7 +4,7 @@
 static const char *TAG = "protection";
 
 /* 默认保护阈值 */
-#define DEFAULT_OVERCURRENT_A 10.0f   /* 过流阈值 10A */
+#define DEFAULT_OVERCURRENT_A 1.0f   /* 过流阈值 10A */
 #define DEFAULT_OVERVOLTAGE_V 265.0f  /* 过压阈值 265V */
 #define DEFAULT_UNDERVOLTAGE_V 175.0f /* 欠压阈值 175V */
 #define DEFAULT_LEAKAGE_MA 30.0f      /* 漏电阈值 30mA */

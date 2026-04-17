@@ -24,9 +24,9 @@
 #define HLW8032_TX_PIN UART_PIN_NO_CHANGE
 
 // -------- HLW8032 calibration --------
-#define APP_CALIB_VOLTAGE_GAIN 1.0f
-#define APP_CALIB_CURRENT_GAIN 1.0f
-#define APP_CALIB_POWER_GAIN 1.0f
+#define APP_CALIB_VOLTAGE_GAIN   1.868f   // 电压校准系数
+#define APP_CALIB_CURRENT_GAIN   1.0f     // 电流校准系数（待校准）
+#define APP_CALIB_POWER_GAIN     1.0f     // 功率校准系数（待校准）
 
 /**
  * @brief 初始化HLW8032 UART接口

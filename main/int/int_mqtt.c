@@ -21,7 +21,7 @@ static const char *TAG = "int_mqtt";
 static esp_mqtt_client_handle_t s_mqtt_client = NULL;
 
 /* 默认Broker地址 */
-#define MQTT_BROKER_URI_DEFAULT "mqtt://192.168.54.26:1883"
+#define MQTT_BROKER_URI_DEFAULT "mqtt://192.168.137.1:1883"
 
 /* 连接状态 */
 static bool s_mqtt_connected = false;
